@@ -1,4 +1,4 @@
-package jpabook.jpashop.util.P6spyLogFormatter;
+package study.datajpa.P6spyLogFormatter;
 
 import com.p6spy.engine.common.P6Util;
 import com.p6spy.engine.logging.Category;
