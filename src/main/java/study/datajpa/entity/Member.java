@@ -9,6 +9,10 @@ import javax.persistence.*;
 @Getter @Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED) //Entity는 기본생성자 필수. JPA가 proxying할때 접근하기 때문에 private는 안되고 protected까진 지원된다.
 @ToString(of = {"id", "username", "age"})
+@NamedQuery(
+        name="Member.findByUsername",
+        query="select m from Member m where m.username = :username"
+)
 public class Member {
 
     @Id
@@ -34,6 +38,11 @@ public class Member {
         if(team != null){
             changeTeam(team);
         }
+    }
+
+    public Member(String username, int age) {
+        this.username = username;
+        this.age = age;
     }
 
     public void changeTeam(Team team){
