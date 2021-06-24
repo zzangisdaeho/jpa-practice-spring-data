@@ -1,18 +1,19 @@
 package study.datajpa.repository;
 
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
+import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
+import study.datajpa.entity.Team;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MemberRepositoryTest {
 
     @Autowired MemberRepository memberRepository;
+    @Autowired TeamRepository teamRepository;
     
     @Test
     public void testMember(){
@@ -93,5 +95,80 @@ class MemberRepositoryTest {
         List<Member> result = memberRepository.findByUsername("AAA");
 
         assertThat(result.get(0)).isEqualTo(m1);
+    }
+
+    @Test
+    public void testQuery(){
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+
+        List<Member> result = memberRepository.findUser("AAA", 10);
+
+        assertThat(result.get(0)).isEqualTo(m1);
+    }
+
+    @Test
+    public void findUsernameList(){
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+
+        List<String> usernameList = memberRepository.findUsernameList();
+
+        assertThat(usernameList.get(0)).isEqualTo("AAA");
+    }
+
+    @Test
+    public void findMemberDto(){
+        Team teamA = new Team("teamA");
+//        teamRepository.save(teamA);
+
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+        m1.setTeam(teamA);
+        m2.setTeam(teamA);
+
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+
+
+        List<MemberDto> memberDto = memberRepository.findMemberDto();
+
+        assertThat(memberDto.get(1).getTeamName()).isEqualTo("teamA");
+    }
+
+    @Test
+    public void findByNames(){
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+
+        List<Member> byNames = memberRepository.findByNames(Arrays.asList("AAA", "BBB"));
+
+        assertThat(byNames.size()).isEqualTo(2);
+    }
+
+    @Test
+    public void returnType(){
+        Member m1 = new Member("AAA", 10);
+        Member m2 = new Member("BBB", 20);
+
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+
+        List<Member> list = memberRepository.findListByUsername("AAA");
+        Member member = memberRepository.findMemberByUsername("AAA");
+        Optional<Member> optional = memberRepository.findOptionalByUsername("AAA");
+
+        assertThat(list.size()).isEqualTo(1);
+        assertThat(member.getUsername()).isEqualTo("AAA");
+        assertThat(optional.isEmpty()).isFalse();
     }
 }
