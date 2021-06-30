@@ -43,7 +43,7 @@ public class MemberController {
                 .map(MemberDto::new);
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void init(){
         List<Member> saveList = new ArrayList<>();
 
