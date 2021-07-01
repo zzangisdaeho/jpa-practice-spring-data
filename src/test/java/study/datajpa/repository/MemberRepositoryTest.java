@@ -1,12 +1,11 @@
 package study.datajpa.repository;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Slice;
-import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.*;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -312,6 +311,176 @@ class MemberRepositoryTest {
     @Test
     public void callCustom(){
         List<Member> result = memberRepository.findMemberCustom();
+    }
+
+    @Test
+    public void specBasic(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        Specification<Member> spec = MemberSpec.username("m1").and(MemberSpec.teamName("teamA"));
+        List<Member> result = memberRepository.findAll(spec);
+
+        //then
+        assertThat(result.size()).isEqualTo(1);
+
+    }
+
+    @Test
+    public void queryByExample(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        // when
+        // Probe 생성
+        Member member = new Member("m1");
+        Team team = new Team("teamA"); //내부조인으로 teamA 가능
+        member.setTeam(team);
+
+        //기본 정책에서 null인것은 검색조건을 무시하지만
+        //age는 primitive타입으로 null이 불가능하기에 검색조건에 들어간다. (0으로)
+        //고로 age는 무시하도록 넣어준다.
+        ExampleMatcher matcher = ExampleMatcher.matching().withIgnorePaths("age");
+
+        Example<Member> example = Example.of(member, matcher);
+
+        List<Member> result = memberRepository.findAll(example);
+
+        assertThat(result.get(0).getUsername()).isEqualTo("m1");
+    }
+
+    @Test
+    public void projectionsWithInterface(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        List<UsernameOnly> result = memberRepository.findProjectionsByUsername("m1");
+
+        for (UsernameOnly usernameOnly : result) {
+            System.out.println("usernameOnly = " +usernameOnly.getUsername());
+        }
+
+    }
+
+    @Test
+    public void projectionsWithClass(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        List<UsernameOnlyDto> result = memberRepository.findProjectionsClassByUsername("m1");
+
+        for (UsernameOnlyDto dto : result) {
+            System.out.println("dto = " +dto.getUsername());
+        }
+
+    }
+
+    @Test
+    public void 중첩구조projection(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        //한건의 엔티티를 넘어가는 순간, 다른 엔티티는 모두 select해온다
+        List<NestedClosedProjections> result = memberRepository.findProjectionsByUsername("m1", NestedClosedProjections.class);
+
+        for (NestedClosedProjections dto : result) {
+            System.out.println("dto.username = " +dto.getUsername());
+            System.out.println("dto.team.name = " +dto.getTeam().getName());
+        }
+
+    }
+
+    @Test
+    public void nativeQuery(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        Member result = memberRepository.findByNativeQuery("m1");
+        System.out.println("result = " + result);
+
+    }
+
+    @Test
+    public void nativeQueryProjection(){
+        //given
+        Team teamA = new Team("teamA");
+        em.persist(teamA);
+
+        Member m1 = new Member("m1", 0, teamA);
+        Member m2 = new Member("m2", 0, teamA);
+        em.persist(m1);
+        em.persist(m2);
+
+        em.flush();
+        em.clear();
+
+        //when
+        Page<MemberProjection> result = memberRepository.findByNativeProjection(PageRequest.of(0, 10));
+        List<MemberProjection> content = result.getContent();
+        for (MemberProjection memberProjection : content) {
+            System.out.println("memberProjection = " + memberProjection.getUsername());
+            System.out.println("memberProjection = " + memberProjection.getTeamName());
+        }
+
     }
 
 }

@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
-public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom, JpaSpecificationExecutor<Member> {
 
     List<Member> findByUsernameAndAgeGreaterThan(String username, int age);
 
@@ -72,4 +72,19 @@ public interface MemberRepository extends JpaRepository<Member, Long>, MemberRep
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Member> findLockByUsername(String username);
+
+    List<UsernameOnly> findProjectionsByUsername(@Param("username") String username);
+
+    List<UsernameOnlyDto> findProjectionsClassByUsername(@Param("username") String username);
+
+    //바로 위의 방식을 dynamic projection 가능 class뿐만 아니라 인터페이스를 넣어도 된다.
+    <T> List<T> findProjectionsByUsername(@Param("username") String username, Class<T> type);
+
+    @Query(value = "select * from Member where username = ?", nativeQuery = true)
+    Member findByNativeQuery(String username);
+
+    @Query(value = "select m.member_id as id, m.username, t.name as teamName from member m left join team t"
+            , countQuery = "select count(*) from member"
+            , nativeQuery = true)
+    Page<MemberProjection> findByNativeProjection(Pageable pageable);
 }
